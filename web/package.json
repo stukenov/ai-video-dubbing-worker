@@ -1,0 +1,20 @@
+{
+  "name": "ai-video-dubbing-worker",
+  "version": "1.0.0",
+  "description": "AI-powered video dubbing service with web interface and Python worker",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "author": "Saken Tukenov",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "express-session": "^1.18.2",
+    "multer": "^2.0.2"
+  }
+}

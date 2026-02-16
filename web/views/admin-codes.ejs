@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/admin-codes.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/admin" class="back-link">← Назад</a>
+        <h1><%= title %></h1>
+        
+        <% if (typeof error !== 'undefined' && error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+        
+        <div class="form-group">
+            <label>Создать новый PIN-код (4 цифры)</label>
+            <form method="POST" action="/admin/codes" class="form-row">
+                <input type="text" name="pin" id="pinInput" maxlength="4" pattern="[0-9]{4}" 
+                       inputmode="numeric" autocomplete="off" required 
+                       placeholder="0000">
+                <button type="submit" class="btn">Создать</button>
+            </form>
+        </div>
+        
+        <div class="codes-list">
+            <h2>Существующие коды доступа</h2>
+            <% if (codes.length === 0) { %>
+                <div class="empty-state">Нет созданных кодов доступа</div>
+            <% } else { %>
+                <% codes.forEach(function(code) { %>
+                    <div class="code-item">
+                        <span class="code-value">
+                            <%= code %>
+                            <% if (code === adminPin) { %>
+                                <span style="color: #007AFF; font-size: 0.8em; margin-left: 10px;">(Админ)</span>
+                            <% } %>
+                        </span>
+                        <% if (code !== adminPin) { %>
+                            <form method="POST" action="/admin/codes/delete" style="display: inline;">
+                                <input type="hidden" name="pin" value="<%= code %>">
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('Удалить код <%= code %>?')">
+                                    Удалить
+                                </button>
+                            </form>
+                        <% } else { %>
+                            <span style="color: #999; font-size: 0.9em;">Нельзя удалить</span>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        const pinInput = document.getElementById('pinInput');
+        
+        // Ограничить ввод только цифрами
+        pinInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    </script>
+</body>
+</html>
+

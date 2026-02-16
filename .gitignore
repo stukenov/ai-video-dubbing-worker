@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+*.pyc
+__pycache__/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Storage
+web/storage/uploads/*.mp4
+web/storage/uploads/*.avi
+web/storage/uploads/*.mov
+web/storage/uploads/*.webm
+web/storage/data/*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+.dockerignore

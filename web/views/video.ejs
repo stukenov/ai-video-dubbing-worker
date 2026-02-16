@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/video.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Назад на главную</a>
+        
+        <h1>Информация о видео</h1>
+        
+        <div class="video-details">
+            <div class="detail-section">
+                <h2>Основная информация</h2>
+                <div class="detail-item">
+                    <span class="detail-label">Название файла:</span>
+                    <span class="detail-value"><%= video.originalName %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Имя файла на сервере:</span>
+                    <span class="detail-value"><%= video.filename %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Язык для дубляжа:</span>
+                    <span class="detail-value language-badge"><%= video.languageName %></span>
+                </div>
+            </div>
+            
+            <div class="detail-section">
+                <h2>Техническая информация</h2>
+                <div class="detail-item">
+                    <span class="detail-label">Размер файла:</span>
+                    <span class="detail-value"><%= video.fileSizeMB %> MB</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Тип файла:</span>
+                    <span class="detail-value"><%= video.mimetype %></span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Дата загрузки:</span>
+                    <span class="detail-value"><%= new Date(video.uploadedAt).toLocaleString('ru-RU') %></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <a href="/" class="btn">Вернуться на главную</a>
+        </div>
+    </div>
+</body>
+</html>
+

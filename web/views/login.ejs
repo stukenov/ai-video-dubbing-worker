@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Adapto Dubbing</h1>
+        <p>Для входа введите PIN-код</p>
+        
+        <% if (error) { %>
+            <div class="error"><%= error %></div>
+        <% } %>
+        
+        <% if (typeof attemptInfo !== 'undefined' && attemptInfo) { %>
+            <% if (attemptInfo.blocked) { %>
+                <div class="error blocked">
+                    <strong>Доступ временно заблокирован</strong><br>
+                    Слишком много неудачных попыток входа. Попробуйте позже.
+                </div>
+            <% } else if (attemptInfo.remaining < 5 && attemptInfo.remaining > 0) { %>
+                <div class="warning">
+                    Осталось попыток: <strong><%= attemptInfo.remaining %></strong>
+                </div>
+            <% } %>
+        <% } %>
+        
+        <button class="btn-open" onclick="document.getElementById('pinDialog').showModal()">
+            Войти
+        </button>
+    </div>
+
+    <dialog id="pinDialog">
+        <div class="dialog-content">
+            <h2>Введите PIN-код</h2>
+            <form method="POST" action="/login" id="pinForm">
+                <div class="pin-input" id="pinInputContainer">
+                    <input type="text" class="pin-digit" id="pin1" maxlength="1" inputmode="numeric" autocomplete="off" required>
+                    <input type="text" class="pin-digit" id="pin2" maxlength="1" inputmode="numeric" autocomplete="off" required>
+                    <input type="text" class="pin-digit" id="pin3" maxlength="1" inputmode="numeric" autocomplete="off" required>
+                    <input type="text" class="pin-digit" id="pin4" maxlength="1" inputmode="numeric" autocomplete="off" required>
+                </div>
+                <div class="loading-indicator" id="loadingIndicator" style="display: none;">
+                    <div class="spinner"></div>
+                </div>
+                <div id="attemptInfo" class="attempt-info" style="display: none;"></div>
+                <input type="hidden" name="pin" id="pinHidden">
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        const dialog = document.getElementById('pinDialog');
+        const pinForm = document.getElementById('pinForm');
+        const pinHidden = document.getElementById('pinHidden');
+        const pinInputs = document.querySelectorAll('.pin-digit');
+        
+        // Открыть dialog при загрузке страницы
+        window.addEventListener('load', () => {
+            dialog.showModal();
+            pinInputs[0].focus();
+        });
+        
+        // Обработка ввода в каждое поле
+        pinInputs.forEach((input, index) => {
+            // Ограничить ввод только цифрами
+            input.addEventListener('input', (e) => {
+                const value = e.target.value.replace(/\D/g, '');
+                e.target.value = value;
+                
+                // Если введена цифра, перейти к следующему полю
+                if (value && index < pinInputs.length - 1) {
+                    pinInputs[index + 1].focus();
+                }
+                
+                // Обновить скрытое поле
+                updatePinValue();
+                
+                // Если введена последняя цифра, автоматически отправить форму
+                if (value && index === pinInputs.length - 1) {
+                    const pinValue = Array.from(pinInputs).map(inp => inp.value).join('');
+                    if (pinValue.length === 4) {
+                        submitPin();
+                    }
+                }
+            });
+            
+            // Обработка удаления (Backspace)
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    pinInputs[index - 1].focus();
+                    pinInputs[index - 1].value = '';
+                    updatePinValue();
+                }
+            });
+            
+            // Обработка вставки (paste)
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 4);
+                
+                pastedData.split('').forEach((digit, i) => {
+                    if (pinInputs[index + i]) {
+                        pinInputs[index + i].value = digit;
+                    }
+                });
+                
+                updatePinValue();
+                
+                // Если вставлено 4 цифры, автоматически отправить
+                if (pastedData.length === 4) {
+                    setTimeout(() => {
+                        submitPin();
+                    }, 100);
+                } else {
+                    // Перейти к последнему заполненному полю или следующему пустому
+                    const nextEmptyIndex = index + pastedData.length;
+                    if (pinInputs[nextEmptyIndex]) {
+                        pinInputs[nextEmptyIndex].focus();
+                    }
+                }
+            });
+        });
+        
+        // Обновить скрытое поле со значением PIN
+        function updatePinValue() {
+            const pinValue = Array.from(pinInputs).map(input => input.value).join('');
+            pinHidden.value = pinValue;
+        }
+        
+        // Функция отправки PIN
+        function submitPin() {
+            const pinValue = Array.from(pinInputs).map(input => input.value).join('');
+            if (pinValue.length !== 4) {
+                return;
+            }
+            
+            // Установить состояние загрузки
+            setLoadingState(true);
+            
+            // Используем XMLHttpRequest и отправляем JSON для корректного парсинга на сервере
+            const xhr = new XMLHttpRequest();
+            const payload = JSON.stringify({ pin: pinValue });
+            
+            xhr.open('POST', '/login', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            
+            xhr.onload = function() {
+                // Проверяем статус ответа
+                if (xhr.status === 429) {
+                    // Rate limit или блокировка
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(xhr.responseText, 'text/html');
+                    const errorElement = doc.querySelector('.error');
+                    const errorMessage = errorElement ? errorElement.textContent : 'Слишком много попыток. Попробуйте позже.';
+                    setErrorState(errorMessage, true);
+                    return;
+                }
+                
+                // Проверяем финальный URL после всех редиректов
+                const finalUrl = xhr.responseURL || window.location.href;
+                const urlObj = new URL(finalUrl, window.location.origin);
+                
+                if (urlObj.pathname === '/login') {
+                    // Остались на странице логина - значит ошибка
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(xhr.responseText, 'text/html');
+                    const errorElement = doc.querySelector('.error');
+                    const errorMessage = errorElement ? errorElement.textContent : 'Неверный PIN-код';
+                    
+                    // Получить информацию о попытках
+                    const attemptInfoElement = doc.querySelector('.warning');
+                    const attemptInfo = attemptInfoElement ? attemptInfoElement.textContent : null;
+                    
+                    setErrorState(errorMessage, false, attemptInfo);
+                } else {
+                    // Редирект произошел - успешный вход
+                    window.location.href = '/';
+                }
+            };
+            
+            xhr.onerror = function() {
+                setErrorState('Ошибка соединения с сервером');
+            };
+            
+            xhr.send(payload);
+        }
+        
+        // Установить состояние загрузки
+        function setLoadingState(isLoading) {
+            const pinContainer = document.getElementById('pinInputContainer');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            if (isLoading) {
+                pinContainer.classList.add('loading');
+                loadingIndicator.style.display = 'block';
+                pinInputs.forEach(input => {
+                    input.disabled = true;
+                    input.blur();
+                });
+            } else {
+                pinContainer.classList.remove('loading');
+                loadingIndicator.style.display = 'none';
+                pinInputs.forEach(input => {
+                    input.disabled = false;
+                });
+            }
+        }
+        
+        // Установить состояние ошибки
+        function setErrorState(errorMessage, isBlocked = false, attemptInfo = null) {
+            const pinContainer = document.getElementById('pinInputContainer');
+            const attemptInfoDiv = document.getElementById('attemptInfo');
+            
+            // Убрать состояние загрузки
+            setLoadingState(false);
+            
+            // Установить состояние ошибки
+            pinContainer.classList.add('error');
+            if (isBlocked) {
+                pinContainer.classList.add('blocked');
+                // Заблокировать поля ввода
+                pinInputs.forEach(input => {
+                    input.disabled = true;
+                });
+            }
+            
+            // Показать информацию о попытках
+            if (attemptInfo) {
+                attemptInfoDiv.textContent = attemptInfo;
+                attemptInfoDiv.style.display = 'block';
+            } else {
+                attemptInfoDiv.style.display = 'none';
+            }
+            
+            // Очистить поля и убрать состояние ошибки
+            setTimeout(() => {
+                if (!isBlocked) {
+                    pinInputs.forEach(input => {
+                        input.value = '';
+                        input.disabled = false;
+                    });
+                    pinHidden.value = '';
+                    
+                    // Убрать состояние ошибки через анимацию
+                    setTimeout(() => {
+                        pinContainer.classList.remove('error');
+                        pinInputs[0].focus();
+                    }, 1000);
+                }
+            }, 500);
+        }
+        
+        // Сброс полей при закрытии dialog
+        dialog.addEventListener('close', () => {
+            const pinContainer = document.getElementById('pinInputContainer');
+            pinContainer.classList.remove('loading', 'error');
+            setLoadingState(false);
+            pinInputs.forEach(input => {
+                input.value = '';
+                input.disabled = false;
+            });
+            pinHidden.value = '';
+        });
+        
+        // Закрыть dialog при клике вне его
+        dialog.addEventListener('click', (e) => {
+            if (e.target === dialog) {
+                dialog.close();
+            }
+        });
+    </script>
+</body>
+</html>
+

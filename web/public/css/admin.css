@@ -1,0 +1,53 @@
+body {
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+h1 {
+    margin-bottom: 30px;
+    font-size: 2em;
+}
+
+.admin-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.menu-item {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.menu-item:hover {
+    background: #f0f0f0;
+    transform: translateX(5px);
+}
+
+.menu-item a {
+    color: #333;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1.1em;
+    display: block;
+}
+
+.menu-item p {
+    color: #666;
+    margin-top: 5px;
+    font-size: 0.9em;
+}
+
+.actions {
+    margin-top: 30px;
+    display: flex;
+    gap: 15px;
+}
+
